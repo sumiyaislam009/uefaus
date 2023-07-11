@@ -1,0 +1,533 @@
+(function(){
+    'use strict';
+    (function ($) {
+
+        const post_type     = $('.ajax-data').data('post_name');
+        const action_data   = $('.ajax-data').data('action');
+        const post_per_page = $('.ajax-data').data('post_page');
+        const taxonomy      = $('.ajax-data').data('taxonomy');
+        const term          = $('.ajax-data').data('term');
+        const tax_page      = $('.ajax-data').data('tax_page');
+        const display_type  = $('.ajax-data').data('display_type');
+        const show_excerpt  = $('.ajax-data').data('show_excerpt');
+        const show_link     = $('.ajax-data').data('show_link');
+        const disable_course_sidebar       = $('.ajax-data').data('disable_course_sidebar');
+        const order_by       = $('.ajax-data').data('order_by');
+        const order          = $('.ajax-data').data('order');
+
+        const posts_of_year     = $('.ajax-data').data('posts_of_year');
+        const posts_of_month    = $('.ajax-data').data('posts_of_month');
+
+        const event_listing_type = $('.ajax-data').data('event_listing_type');
+        const select_event_type = $('.ajax-data').data('select_event_type');
+        const page_url = new URL(window.location.href);
+        let filters         = {};
+        let page_number;
+        let keyword;
+        let initFiltersTags = true;
+      
+        $('.post_append_here').addClass('active');
+
+
+        function ajaxInit(){
+            page_number = $('.ajax-data').attr('data-page_number');
+            // var newUrl = url + "?" + paramName + "=" + encodeURIComponent(paramValue);
+
+            $.ajax({
+                url:ajax_url,
+                dataType: 'json',
+                type: 'POST',
+                data:{
+                    action: action_data,
+                    page_number: page_number,
+                    post_type: JSON.stringify(post_type),
+                    post_per_page: post_per_page,
+                    taxonomy: taxonomy,
+                    term: term,
+                    tax_page: tax_page,
+                    event_listing_type: event_listing_type,
+                    select_event_type: select_event_type,
+                    posts_of_year: posts_of_year,
+                    posts_of_month: posts_of_month,
+                    disable_course_sidebar: disable_course_sidebar,
+                    order_by: order_by,
+                    order: order,
+                    filters: JSON.stringify(filters)
+                },
+                beforeSend:function(xhr){
+                    showActiveFilters();
+                    if (page_number == 1) {
+                        
+                        $('.post_append_here .post-card, .post_append_here .posts-list__row, .post_append_here .row-training-course').fadeOut('400', function() {
+                            $('.post_append_here').empty(); // insert data
+                        });
+                    }
+
+                    $('.posts-not-found').remove();
+
+                    // Before send ajax show loading gif
+                    $( ".btn-load-more-js" ).parent().append('<div class="loading-ajax-icon"></div>');
+                    
+                },
+                success:function(response){
+                    
+                    let data = response.data.query_results;
+                    let total_results = response.data.total_results;
+                    let current_term_id = response.data.current_term_id;
+                    let html = '';
+                    if( data.length > 0 ){
+
+                        if (action_data == 'events_load_more') {
+                            let new_month_year = '';
+                            let last_item = $('#event_handler .posts-list__row:last-child').attr('data-month_group');
+                            if (event_listing_type == 'all') {
+                                $.each(data, function(key, value) {
+               
+                                        let month_year = value.month_year;
+
+                                        html += '<div class="posts-list__row post-'+ value.post_type_name +'" data-month_group="'+month_year+'">';
+                                        if ( month_year !== new_month_year && month_year !== last_item) {
+                                            html += '<div class="month-sort-date show-mobile">';
+                                            html += '<span>'+month_year+'</span>';
+                                            html += '</div>';
+                                        }
+                                        html += '<div class="post-item-data">';
+                                            html += '<div class="post-date">'+ value.event_date +'</div>';
+                                            html += '<div class="post-location">'+ value.location +'</div>';
+                                        html += '</div>';
+                                        html += '<div class="post-item-details">';
+
+                                            if ( month_year !== new_month_year && month_year !== last_item) {
+                                                html += '<div class="month-sort-date show-desktop">';
+                                                html += '<span>'+month_year+'</span>';
+                                                html += '</div>';
+                                            }
+
+                                            html += '<a href="'+value.permalink.url+'" target="'+value.permalink.target+'" class="h3 post-title">';
+                                            html += value.the_title;
+                                            html += '</a>';
+                                            html += '<div class="post-description">';
+                                                html += '<div class="post-description__label">Description</div>';
+                                                html += value.the_content;
+                                            html += '</div>';
+                                        html += '</div>';
+                                    html += '</div>';
+
+                                    new_month_year = value.month_year;
+
+                                });
+                            }
+                            else{
+                                $.each(data, function(key, value) {
+                                    html += '<div class="posts-list__row '+ value.post_type_name +'">';
+                                        html += '<div class="post-item-data">';
+                                            html += '<div class="event-date">'
+                                            html += '<div class="date-day">'+value.separated_date.day+'</div>';
+                                            html += '<div class="date-right">';
+                                            html += '<div class="date-month">'+value.separated_date.month+'</div>';
+                                            html += '<div class="date-year">'+value.separated_date.year+'</div>';
+                                            html +='</div>';
+                                            html += '</div>';
+                                        html += '</div>';
+                                        html += '<div class="post-item-details">';
+                                            html += '<a href="'+value.permalink.url+'" target="'+value.permalink.target+'" class="h3 post-title">';
+                                            html += value.the_title;
+                                            html += '</a>';
+                                            if (show_excerpt == true) {
+                                            html += '<div class="post-description">';
+                                                html += '<div class="post-description__label">Description</div>';
+                                                html += value.the_content;
+                                            html += '</div>';
+                                            }
+                                            if (show_link == true) {
+                                                html +='<a href="'+value.permalink.url+'" class="link uppercase" target="'+value.permalink.target+'">'+value.permalink.text+'</a>';
+                                            }
+                                        html += '</div>';
+                                    html += '</div>';
+
+                                });  
+                            }
+                        }
+                        else if (post_type.length >= 1 && post_type[0].value == 'training-course') {
+                        
+                            for( var i = 0; i < data.length; i++){
+                                    html += '<div class="content-section__wrap customize-training-style row-'+ data[i].post_type_name +'">';
+
+                                        if (response.data.disable_course_sidebar != 'yes') {
+
+                                            html += '<div class="content-section__aside"><div class="table-of-contents"><ul class="table-of-contents__list">';
+                                                if (data[i].brochure != undefined || data[i].brochure != null) {
+                                                   
+                                                    html +='<li class="brochure"><a href="'+data[i].brochure.url+' " download="'+data[i].brochure.name+'"><span class="svg-icon-wrapper"></span>Brochure</a></li>';
+                                                    
+                                                }
+
+                                                $.each(data[i].post_terms, function (taxonomy) {
+                                                    if (taxonomy != 'course-type') {
+                                                        html += '<li class="taxonomy_'+ taxonomy +'"><span class="svg-icon-wrapper"></span><div class="all-terms">';
+                                                        $.each(data[i].post_terms[taxonomy], function (key, val) {
+                                                            html += '<span>'+val.name + '</span>';
+                                                        });
+                                                        html += '</div></li>';
+                                                    }
+                                                });
+                                            html += '</ul></div></div>';
+                                        }
+                                        html += '<div class="content-section__content entry-content"><div class="post-item-details">';
+                                            html += '<a href="'+data[i].permalink.url+'" target="'+data[i].permalink.target+'" class="h3 post-title">';
+                                            html += data[i].title;
+                                            html += '</a>';
+                                            if (show_excerpt == true) {
+                                            html += '<div class="post-description">';
+                                                html += data[i].content;
+                                            html += '</div>';
+                                            }
+                                            if (show_link == true) {
+                                                html +='<a href="'+data[i].permalink.url+'" class="link uppercase" target="'+data[i].permalink.target+'">'+data[i].permalink.text+'</a>';
+                                            }
+                                        html += '</div></div>';
+                                    html += '</div>';
+                                }
+                            
+                        }
+                        else{
+                            for( var i = 0; i < data.length; i++){
+                                
+                                if ( display_type === 'list') {
+                                    html += '<div class="posts-list__row '+ data[i].post_type_name +'">';
+                                        html += '<div class="post-item-data">';
+                                            html += '<div class="post-date">'+data[i].meta_data+'</div>';
+                                        html += '</div>';
+                                        html += '<div class="post-item-details">';
+                                            html += '<a href="'+data[i].permalink.url+'" target="'+data[i].permalink.target+'" class="h3 post-title">';
+                                            html += data[i].title;
+                                            html += '</a>';
+                                            if (show_excerpt == true) {
+                                            html += '<div class="post-description">';
+                                                html += '<div class="post-description__label">Description</div>';
+                                                html += data[i].excerpt;
+                                            html += '</div>';
+                                            }
+                                            if (show_link == true) {
+                                                html +='<a href="'+data[i].permalink.url+'" class="link uppercase" target="'+data[i].permalink.target+'">'+data[i].permalink.text+'</a>';
+                                            }
+                                        html += '</div>';
+                                    html += '</div>';
+                                }else{
+           
+                                    html += '<a href="'+data[i].permalink.url+'" target="'+data[i].permalink.target+'" title="'+ data[i].title +'" class="post-card '+ data[i].post_type_name +' color-scheme-'+ data[i].post_type_name;
+                                    
+                                    if (data[i].post_type_name == 'resource') {
+
+                                        $.each(data[i].post_terms, function (key, val) {
+                                            html += ' post-term-'+val.slug;
+                                        });
+                                    }
+
+                                    html += '">';
+                                    html +='<div class="post-card__header">'+ data[i].featured +'</div>'; 
+                                    html +='<div class="post-card__body"><div class="card-metadata">'+data[i].meta_data+'</div>';
+                                    html +='<h3 class="card-title">'+ data[i].title +'</h3>';
+                                    html +='<p class="card-excerpt">'+ data[i].excerpt +'</p>';
+                                    html += '<div class="read-more">'+data[i].permalink.text+'</div></div>';
+                                    html += '</a>';
+                                }
+                            }
+                        }
+    
+                        // Append html element to the category handler
+                        setTimeout(function() {
+                            $('.post_append_here').append(html); // insert data
+                            // Hide load more button if the post reach the limit
+                            let shown_posts = $('.post_append_here').children().length;
+                            
+                            if(shown_posts >= total_results){
+                                $('.btn-load-more-js').hide();
+                            }else{
+                                $('.btn-load-more-js').show();
+                            }
+                        }, 420);
+
+                        $('.posts-not-found').remove();
+
+
+                    }else{
+                        setTimeout(function() { 
+                            // If there are no posts show message and hide load more button
+                            $('.post_append_here').append('<p class="posts-not-found">No posts found!</p>');
+                        }, 400);
+                        $('.btn-load-more-js').fadeOut('slow');
+                    }
+
+                    // After ajax is finished hide loading icon little bit late for smoothing effect
+                    setTimeout(function() { 
+                        $('.post_append_here .post-card, .post_append_here .posts-list__row').addClass('visible');
+                        $('.loading-ajax-icon').fadeOut('400').remove();
+                        document.documentElement.style.setProperty('--scrollbar-width', (window.innerWidth - document.documentElement.clientWidth) + "px");
+                    }, 440);
+                },
+                error:function(data){
+                    console.log('error', data);
+                }
+            });
+            return false;
+        }
+
+        // Increment pagination function
+        function incrementPagination(){
+            $('.ajax-data').attr('data-page_number', parseInt(page_number) + 1); 
+        }
+
+        function resetPagination(){
+            $('.ajax-data').attr('data-page_number', parseInt(1));
+        }
+
+        // Function when clicking load more button
+        function loadMorePost(){
+            $('.btn-load-more-js').on( "click", function(e){
+                e.preventDefault();
+                incrementPagination();
+                ajaxInit();
+            });
+        }
+
+        function dataFilter(){
+        
+
+            $.each($('div[data-filter]'), function(index, val) {
+                 /* iterate through array or object */
+                $(this).find('input').change(function() {
+
+                    var data_filter = $(this).attr('name');
+                    resetPagination();
+                    
+                    var list = $('input[name="'+data_filter+'"]:checked').map(function () {
+                        var filter_name = $(this).data('filter_name');
+
+                        var filterObj = {
+                            filter_name: filter_name,
+                            filter_value: this.value 
+                        }
+
+                        return filterObj;
+                    }).get();
+
+                    filters[data_filter] = list;
+
+                    ajaxInit();
+
+                    updateCurrentURL();
+                   
+                });
+
+            });
+
+            $('.search-bar__form-keyword').on('click', '.search-bar__form-keyword__submit', function(event) {
+                // event.preventDefault();
+                /* Act on the event */
+                keyword = $('.search-bar__form-keyword__input').val();
+
+                filters['keyword'] = [{
+                    filter_name: 'keyword',
+                    filter_value: keyword
+                }];
+
+                updateCurrentURL();
+
+            });
+        }
+
+        function hasNonEmptyArray(obj) {
+          for (var prop in obj) {
+            if (Array.isArray(obj[prop]) && obj[prop].length > 0) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+      
+        function updateCurrentURL(){
+            var args = '';
+            $.each(filters, function(index, val) {
+                let filter_type = index;
+                args += '&'+index+'=';
+                $.each(val, function(index, value) {
+                    if (index != 0) {
+                        args += ',';
+                    }
+                    if (filter_type == 'keyword') {
+                        args += encodeURIComponent(value.filter_value);
+                    }else{
+                        args += value.filter_value; 
+                    }
+                });
+
+            });
+            
+            var new_url = window.location.protocol + "//" + window.location.host + window.location.pathname; 
+            if(hasNonEmptyArray(filters)) {
+                new_url += '?'+args;
+            }
+            
+            window.history.pushState({ path: new_url }, '', new_url);
+            
+        }
+
+        function showActiveFilters(){
+            const filtersRow = '<div class="filters-row filters-row-js"><div class="filters-selected-item filters-selected-item-js"></div><button class="button button--primary button--small clear-all-filters-js">Clear</button></div>';
+
+            $('.filters-selected-item-js').empty();
+            
+            if (initFiltersTags == true && $('.search-filter-js').length > 0) {
+                $(filtersRow).insertAfter('.hero-page');
+                initFiltersTags = false;
+
+            }else if(hasNonEmptyArray(filters)) {
+
+                $('.entry-content').find('.filters-row-js').css("display", "flex");
+
+                $.each(filters, function(index, val) {
+                    let filter_type = index;
+                    $.each(val, function(index, value) {
+
+
+                        if (value.filter_name == 'keyword') {
+                            var filter_label = value.filter_value;
+                        }else{
+                            var filter_label = value.filter_name;
+
+                        }
+                        let selected_item = '<span class="filter-item" data-filter_type="'+filter_type+'" data-filter_value="'+value.filter_value+'">'+filter_label+'</span>';
+                        $('.filters-selected-item-js').append(selected_item);
+
+                        if (value.filter_name != 'keyword') {
+                            $('input[name='+filter_type+'][value='+value.filter_value+']').attr( 'checked', true );
+                        }
+
+                    });
+
+                });
+
+            }else{
+
+                $('.entry-content').find('.filters-row-js').fadeOut();
+
+            }
+
+            $('.filters-selected-item').on('click', '.filter-item', function(event) {
+                event.preventDefault();
+                /* Act on the event */
+                var filter_type = $(this).data('filter_type');
+                var filter_value = $(this).data('filter_value');
+
+                // Remove checked item from dropdown filters
+                if (filter_type == 'keyword') {
+                    $('.search-bar__form-keyword__input').val('');
+                }else{
+                    $('input[name='+filter_type+'][value='+filter_value+']').removeAttr('checked');
+                }
+
+                // Get index of object based on filter vlaue
+                var index_item = filters[filter_type].findIndex(x => x.filter_value == filter_value);
+
+                if (index_item !== -1) {
+                  filters[filter_type].splice(index_item, 1);
+                  ajaxInit();
+                }
+
+                updateCurrentURL();
+
+            });
+
+            $('.clear-all-filters-js').on('click', function(event) {
+                event.preventDefault();
+
+                filters = {}
+                $('.search-bar__form-keyword__input').val('');
+                $('.filter-wrapper-js input:checkbox').removeAttr('checked');
+                ajaxInit();
+
+                updateCurrentURL();
+            });
+            
+        }
+
+        function getParamsFromUrl() {
+
+          var urlParams = new URLSearchParams(window.location.search); // create URLSearchParams object from URL
+
+          urlParams.forEach(function(value, key) { // iterate through parameters using forEach() method
+            if (key != 'filters') {
+                var param = []; // initialize object to store key-value pairs
+                var split_item = value.split(",");
+                param[key] = []; // assign key-value pair to object
+                var push_items = [];
+                    
+
+                $.each(split_item,function(item, value){
+                    if (value) {
+
+                        
+                        if (key == 'keyword') {
+                            var filter_name = 'keyword';
+                        }else{
+                            var filter_name = $('input[name='+key+'][value='+value+']').data('filter_name');
+                        }           
+
+                        var items = {
+                            filter_name: filter_name,
+                            filter_value: value  
+                        }
+                        
+                        push_items.push(items);   
+                    }
+                });
+            }
+            filters[key] = push_items;
+                    
+          });
+
+          showActiveFilters();
+  
+        }
+
+
+        $(document).ready(function () {
+  
+            getParamsFromUrl();
+            
+            $("#search-form").submit(function(e) {
+                e.preventDefault();
+                resetPagination();
+                ajaxInit();
+
+            })
+            loadMorePost();
+            dataFilter();
+            if ($('.ajax-data').length) {
+                ajaxInit();
+            }
+
+
+            var fancybox_items = 'a[href*="youtube.com"], a[href*="youtu.be"], a[href*="vimeo.com"], a[href*="wistia.com"], a[href*=".mp4"], a[href*=".ogg"], a[href*=".webm"]';
+
+            $('.archive-grid').on('click', fancybox_items, function(event) {
+                event.preventDefault();
+                /* Act on the event */
+                let href = $(this).attr('href');
+                Fancybox.show([
+                  {
+                    src: href,
+                    type: "video",
+                    ratio: 16 / 9,
+                    width: 720,
+                  },
+                ]);
+            });
+
+
+        });
+
+    })(window.jQuery);
+}());
