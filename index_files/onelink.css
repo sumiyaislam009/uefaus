@@ -1,0 +1,49 @@
+/* GPS-18 */
+/*.cat-item-bp, .cat-item-pc, .cat-item-18 {
+	display: none !important;
+}*/
+
+/* GPS-21 */
+#item4 {
+	display: none;
+}
+
+/* GPS-24 */
+
+/* Element | https://en-gb.gpstrategies.com/solutions/technical-performance/technology-adoption/enterprise-digital-transformation/ */
+
+#block_601140495ae4c {
+  /* padding-top: 6px; */
+  padding: 0;
+}
+
+/* Element | https://en-gb.gpstrategies.com/solutions/technical-performance/technology-adoption/enterprise-digital-transformation/ */
+
+div.media-content:nth-child(1) > div:nth-child(2) > div:nth-child(3) > p {
+  font-size: 1rem;
+  line-height: 1.65;
+  font-weight: inherit;
+}
+
+/* GPS-10 */
+
+/* Inline #46 | https://engb-gpstrategies.stageb.onelink-translations.com/?s=resources */
+
+.search .media-object__headline.h4 {
+  display: inline-block !important;
+}
+
+.search .media-object__headline > * {
+  /* display: inherit; */
+  display: inherit !important;
+}
+
+/* GPS-116 */
+.language-picker__list {
+	height: auto;
+}
+
+/* GPS-94 */
+#menu-item-23002 {
+	display: inline-block !important;
+}
